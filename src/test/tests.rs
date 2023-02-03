@@ -6,9 +6,9 @@ use regex::Regex;
 use crate::config::{LayeredCacheConfig};
 use crate::simulator::{LayeredCacheResult, Simulator};
 
-const SAMPLE_INPUTS_PATH: &str = "D:/cachedata/sample-inputs";
-const SAMPLE_OUTPUTS_PATH: &str = "D:/cachedata/sample-outputs";
-const TRACE_FILES_PATH: &str = "D:/cachedata/trace-files";
+const SAMPLE_INPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-inputs";
+const SAMPLE_OUTPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-outputs";
+const TRACE_FILES_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/trace-files";
 
 #[test]
 fn run_all_examples() -> Result<(), Box<dyn Error>> {
@@ -39,7 +39,8 @@ fn run_all_examples() -> Result<(), Box<dyn Error>> {
         let result = simulator.simulate(BufReader::with_capacity(40_000, trace_file))?;
         // Check results
         assert_eq!(*result, expected_output);
-        println!("Success for {file_name}");
+        let time = simulator.get_execution_time();
+        println!("Success for {file_name}, time: {}", time.as_nanos() as f64 / 1e9);
     }
     Ok(())
 }

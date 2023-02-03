@@ -90,13 +90,7 @@ impl Simulator {
             let address = u64::from_str_radix(addr_as_str, 16).map_err(|e| format!("Parsing address error: {e}"))?;
             let size_as_str = std::str::from_utf8(&buffer[SIZE..LINE_SIZE - 1]).map_err(|e| format!("Parsing size error: {e}"))?;
             let size = size_as_str.parse::<u16>().map_err(|e| format!("Parsing size error: {e}"))?;
-            let is_read = buffer[RW_MODE] == b'R';
-            if is_read {
-                self.read(address, size);
-            } else {
-                debug_assert!(buffer[RW_MODE] == b'W');
-                self.read(address, size)
-            }
+            self.read(address, size);
         }
     }
 

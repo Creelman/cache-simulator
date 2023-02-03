@@ -47,7 +47,7 @@ fn main() -> Result<(), String> {
         let simulation_time = simulator.get_execution_time();
         let total_time = end - start;
         println!("Simulation time: {}s, {}ns", simulation_time.as_secs(), simulation_time.as_nanos());
-        println!("Total execution time (includes initial parsing, configuration, and output): {}s, {}ns", total_time.as_secs(), total_time.as_nanos())
+        println!("Total execution time (includes initial parsing, configuration, and output): {}s", total_time.as_nanos() as f64 / 1e9)
     }
     Ok(())
 }
