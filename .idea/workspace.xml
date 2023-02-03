@@ -16,14 +16,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b8d4b474-87b9-4f4f-8141-00c69a8a631c" name="Changes" comment="Initial Commit">
-      <change afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/tests.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/cacheprac.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/cacheprac.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cache.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cache.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/simulator.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/simulator.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/tests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/tests.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,6 +42,9 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="x8ii29wo" />
   </component>
@@ -47,7 +52,7 @@
     <option name="stateVersion" value="1" />
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="CurrentFile" />
+    <option name="selectedTabId" value="ProjectErrors" />
   </component>
   <component name="ProjectId" id="2Kv06kXd25xKei7CTok18o5FCYB" />
   <component name="ProjectLevelVcsManager">
@@ -73,12 +78,19 @@
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
     "org.rust.disableDetachedFileInspection/cs/home/omc1/Documents/CS4202/cacheprac/src/test/tests.rs": "true",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\creel\CLionProjects\cacheprac" />
+    </key>
+  </component>
   <component name="RunManager" selected="Cargo.Test test::tests::run_all_examples">
     <configuration name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-      <option name="command" value="run --package cacheprac --bin cacheprac -- $PROJECT_DIR$/../../../../../studres/CS4202/Coursework/P1-CacheSim/sample-inputs/_2way_lru.json $PROJECT_DIR$/../../../../../studres/CS4202/Coursework/P1-CacheSim/trace-files/xz.out" />
+      <option name="command" value="run --package cacheprac --bin cacheprac -- D:/cachedata/sample-inputs/_2way_lru.json D:/cachedata/trace-files/xz.out" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="requiredFeatures" value="true" />
@@ -95,7 +107,7 @@
       </method>
     </configuration>
     <configuration name="Sprint" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-      <option name="command" value="run --release --package cacheprac --bin cacheprac -- $PROJECT_DIR$/../../../../../studres/CS4202/Coursework/P1-CacheSim/sample-inputs/_2way_lfu.json $PROJECT_DIR$/../../../../../studres/CS4202/Coursework/P1-CacheSim/trace-files/xz.out" />
+      <option name="command" value="run --release --package cacheprac --bin cacheprac -- D:/cachedata/sample-inputs/_2way_lru.json D:/cachedata/trace-files/xz.out --performance" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="requiredFeatures" value="true" />
@@ -112,7 +124,7 @@
       </method>
     </configuration>
     <configuration name="Test test::tests::run_all_examples" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package cacheprac --bin cacheprac test::tests::run_all_examples -- --exact" />
+      <option name="command" value="test --package cacheprac --bin cacheprac -- --exact --nocapture" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="requiredFeatures" value="true" />
@@ -140,6 +152,7 @@
     </recent_temporary>
   </component>
   <component name="RustProjectSettings">
+    <option name="runExternalLinterOnTheFly" value="true" />
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
     <option name="version" value="2" />
   </component>
@@ -154,6 +167,10 @@
       <workItem from="1674839577348" duration="38952000" />
       <workItem from="1675344311336" duration="72000" />
       <workItem from="1675344393527" duration="16538000" />
+      <workItem from="1675373264837" duration="48000" />
+      <workItem from="1675373507914" duration="429000" />
+      <workItem from="1675374082853" duration="2515000" />
+      <workItem from="1675379760693" duration="5030000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <created>1675086449139</created>
@@ -173,15 +190,8 @@
     <MESSAGE value="Initial Commit" />
     <option name="LAST_COMMIT_MESSAGE" value="Initial Commit" />
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/simulator.rs</url>
-          <line>90</line>
-          <option name="timeStamp" value="9" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

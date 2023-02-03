@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct LayeredCacheConfig {
@@ -26,7 +26,7 @@ pub enum CacheKindConfig {
     #[serde(alias = "4way")]
     FourWay,
     #[serde(alias = "8way")]
-    EightWay
+    EightWay,
 }
 
 #[derive(Copy, Clone, Deserialize)]
@@ -36,7 +36,7 @@ pub enum ReplacementPolicyConfig {
     #[serde(alias = "lru")]
     LeastRecentlyUsed,
     #[serde(alias = "lfu")]
-    LeadFrequentlyUsed
+    LeastFrequentlyUsed,
 }
 
 impl Default for ReplacementPolicyConfig {

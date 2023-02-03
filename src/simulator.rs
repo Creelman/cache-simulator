@@ -1,6 +1,5 @@
-use std::fs::File;
-use std::io::{BufReader, Read};
-use std::time::Instant;
+use std::io::{Read};
+use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use crate::cache::Cache;
 use crate::config::{CacheConfig, CacheKindConfig, LayeredCacheConfig};
@@ -15,6 +14,7 @@ const SIZE: usize = RW_MODE + 2;
 pub struct Simulator {
     caches: Vec<Cache>,
     result: LayeredCacheResult,
+    simulation_time: Duration,
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -44,22 +44,22 @@ impl Simulator {
         Self {
             caches,
             result,
+            simulation_time: Duration::new(0, 0)
         }
     }
 
     #[inline(always)]
     fn read(&mut self, address: u64, size: u16) {
         // Assume line size doesn't decrease with level
-        let alignment_diff = address % self.caches[0].line_size;
+        let lowest_line_size = self.caches[0].get_line_size();
+        let alignment_diff = address % lowest_line_size;
         let mut current_aligned_address = address - alignment_diff;
-        while current_aligned_address < (address + size as u64) as u64 {
+        while current_aligned_address < (address + size as u64) {
             let mut cache_index = 0;
-            let mut found = false;
             while cache_index < self.caches.len() {
-                let line_size = self.caches[cache_index].line_size;
+                let line_size = self.caches[cache_index].get_line_size();
                 if self.caches[cache_index].read_and_update_line(current_aligned_address - current_aligned_address % line_size) {
                     // Hit
-                    found = true;
                     self.result.caches[cache_index].hits += 1;
                     break;
                 } else {
@@ -68,33 +68,28 @@ impl Simulator {
                 }
                 cache_index += 1;
             }
-            if !found {
-                self.result.main_memory_accesses += 1;
-            }
-            current_aligned_address += self.caches[0].line_size
+            current_aligned_address += lowest_line_size;
         }
+        // Main memory access are whatever misses the last cache
+        self.result.main_memory_accesses = self.result.caches.last().unwrap().misses;
     }
 
 
-    pub fn simulate<Source: Read>(&mut self, mut reader: BufReader<Source>) -> Result<&LayeredCacheResult, String> {
-        if reader.buffer().len() % LINE_SIZE != 0 {
-            return Err(String::from("Buffer is incorrectly aligned"));
-        }
+    pub fn simulate<Source: Read>(&mut self, mut reader: Source) -> Result<&LayeredCacheResult, String> {
         let start = Instant::now();
         let mut buffer = [0u8; LINE_SIZE];
         loop {
             let num_bytes = reader.read(&mut buffer).map_err(|e| format!("Couldn't read from the input source: {e}"))?;
             if num_bytes == 0 {
                 let end = Instant::now();
-                eprintln!("Time: {}", (end - start).as_secs_f64());
-                println!("Count: {}", self.caches.iter().map(|c| c.cache.iter().filter(|a| !a.valid).count()).sum::<usize>());
+                self.simulation_time += end - start;
                 return Ok(&self.result);
             }
             debug_assert!(num_bytes == 40 && buffer[39] == b'\n');
             let addr_as_str = std::str::from_utf8(&buffer[ADDRESS_OFFSET..ADDRESS_UPPER]).map_err(|e| format!("Parsing address error: {e}"))?;
             let address = u64::from_str_radix(addr_as_str, 16).map_err(|e| format!("Parsing address error: {e}"))?;
             let size_as_str = std::str::from_utf8(&buffer[SIZE..LINE_SIZE - 1]).map_err(|e| format!("Parsing size error: {e}"))?;
-            let size = u16::from_str_radix(size_as_str, 10).map_err(|e| format!("Parsing size error: {e}"))?;
+            let size = size_as_str.parse::<u16>().map_err(|e| format!("Parsing size error: {e}"))?;
             let is_read = buffer[RW_MODE] == b'R';
             if is_read {
                 self.read(address, size);
@@ -103,6 +98,10 @@ impl Simulator {
                 self.read(address, size)
             }
         }
+    }
+
+    pub fn get_execution_time(&self) -> &Duration {
+        &self.simulation_time
     }
 
     fn config_to_cache(config: &CacheConfig) -> Cache {
