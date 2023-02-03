@@ -14,3 +14,7 @@ serde_json = "1.0.91"
 # The current tests run all examples
 [profile.test]
 opt-level = 3
+debug-assertions = false
+
+[profile.release]
+debug = true
