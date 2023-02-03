@@ -35,7 +35,7 @@ fn run_all_examples() -> Result<(), Box<dyn Error>> {
         let expected_output: LayeredCacheResult = serde_json::from_reader(BufReader::new(expected_output_file))?;
         // Simulate!
         let config: LayeredCacheConfig = serde_json::from_reader(BufReader::new(config_file))?;
-        let mut simulator = Simulator::new(config);
+        let mut simulator = Simulator::new(&config);
         let result = simulator.simulate(BufReader::with_capacity(40_000, trace_file))?;
         // Check results
         assert_eq!(*result, expected_output);

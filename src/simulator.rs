@@ -1,3 +1,4 @@
+use std::hint::unreachable_unchecked;
 use std::io::{Read};
 use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
@@ -31,7 +32,7 @@ pub struct CacheResult {
 }
 
 impl Simulator {
-    pub fn new(config: LayeredCacheConfig) -> Self {
+    pub fn new(config: &LayeredCacheConfig) -> Self {
         let caches: Vec<Cache> = config.caches.iter().map(Self::config_to_cache).collect();
         let result = LayeredCacheResult {
             main_memory_accesses: 0,
@@ -44,7 +45,7 @@ impl Simulator {
         Self {
             caches,
             result,
-            simulation_time: Duration::new(0, 0)
+            simulation_time: Duration::new(0, 0),
         }
     }
 
@@ -52,13 +53,12 @@ impl Simulator {
     fn read(&mut self, address: u64, size: u16) {
         // Assume line size doesn't decrease with level
         let lowest_line_size = self.caches[0].get_line_size();
-        let alignment_diff = address % lowest_line_size;
+        let alignment_diff = address & !self.caches[0].get_alignment_bit_mask();
         let mut current_aligned_address = address - alignment_diff;
         while current_aligned_address < (address + size as u64) {
             let mut cache_index = 0;
             while cache_index < self.caches.len() {
-                let line_size = self.caches[cache_index].get_line_size();
-                if self.caches[cache_index].read_and_update_line(current_aligned_address - current_aligned_address % line_size) {
+                if self.caches[cache_index].read_and_update_line(current_aligned_address) {
                     // Hit
                     self.result.caches[cache_index].hits += 1;
                     break;
@@ -86,16 +86,22 @@ impl Simulator {
                 return Ok(&self.result);
             }
             debug_assert!(num_bytes == 40 && buffer[39] == b'\n');
-            let addr_as_str = std::str::from_utf8(&buffer[ADDRESS_OFFSET..ADDRESS_UPPER]).map_err(|e| format!("Parsing address error: {e}"))?;
-            let address = u64::from_str_radix(addr_as_str, 16).map_err(|e| format!("Parsing address error: {e}"))?;
-            let size_as_str = std::str::from_utf8(&buffer[SIZE..LINE_SIZE - 1]).map_err(|e| format!("Parsing size error: {e}"))?;
-            let size = size_as_str.parse::<u16>().map_err(|e| format!("Parsing size error: {e}"))?;
+            let address;
+            let size;
+            unsafe {
+                address = Self::parse_address((&buffer[ADDRESS_OFFSET..ADDRESS_UPPER]).try_into().unwrap());
+                size = Self::parse_size((&buffer[SIZE..LINE_SIZE - 1]).try_into().unwrap())
+            }
             self.read(address, size);
         }
     }
 
     pub fn get_execution_time(&self) -> &Duration {
         &self.simulation_time
+    }
+
+    pub fn get_uninitialised_line_counts(&self) -> Vec<u64> {
+        self.caches.iter().map(|x| x.get_uninitialised_line_count() as u64).collect()
     }
 
     fn config_to_cache(config: &CacheConfig) -> Cache {
@@ -117,6 +123,46 @@ impl Simulator {
                 Cache::new(config.size, config.line_size, num_lines / 8, config.replacement_policy)
             }
         }
+    }
+
+    // Way faster than stdlib, but unsafe
+    #[inline(always)]
+    unsafe fn parse_address(buf: &[u8; 16]) -> u64 {
+        // Known size array is unrolled by compiler
+        let mut res: u64 = 0;
+        for (i, char) in buf.iter().rev().enumerate() {
+            let bytes = if (*char) <= b'9' {
+                *char - b'0'
+            } else {
+                *char - b'a' + 10
+            };
+            res |= ((bytes as u64) << (i * 4));
+        }
+        debug_assert_eq!(
+            {
+                let addr_as_str = std::str::from_utf8(buf).unwrap();
+                let address = u64::from_str_radix(addr_as_str, 16).unwrap();
+                address
+            },
+            res
+        );
+        res
+    }
+
+    unsafe fn parse_size(buf: &[u8; 3]) -> u16 {
+        let mut res: u16 = 0;
+        for (i, char) in buf.iter().rev().enumerate() {
+            res += (10u16.pow(i as u32)) * ((*char - b'0') as u16);
+        }
+        debug_assert_eq!(
+            {
+                let size_as_str = std::str::from_utf8(buf).unwrap();
+                let size = size_as_str.parse::<u16>().unwrap();
+                size
+            },
+            res
+        );
+        res
     }
 }
 

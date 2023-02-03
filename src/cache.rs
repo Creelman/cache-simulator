@@ -3,6 +3,7 @@ use crate::config::ReplacementPolicyConfig;
 pub struct Cache {
     set_selection_bit_mask: u64,
     tag_selection_bit_mask: u64,
+    cache_alignment_bit_mask: u64,
     line_size: u64,
     cache: Vec<CacheLineMetadata>,
     replacement_policy: CacheReplacementPolicy,
@@ -81,6 +82,7 @@ impl Cache {
             set_size: cache_lines / num_sets,
             set_selection_bit_mask: ((2u64.pow(set_selection_bits as u32)) - 1) << cache_alignment_bits,
             tag_selection_bit_mask: (2u64.pow(u64::BITS - set_selection_bits as u32 - cache_alignment_bits as u32) - 1) << (cache_alignment_bits + set_selection_bits),
+            cache_alignment_bit_mask: !((2u64.pow(cache_alignment_bits as u32)) - 1),
             line_size,
             cache_alignment_bits,
             cache: vec![CacheLineMetadata::default(); cache_lines as usize],
@@ -117,7 +119,15 @@ impl Cache {
         false
     }
 
+    pub fn get_alignment_bit_mask(&self) -> u64 {
+        self.cache_alignment_bit_mask
+    }
+
     pub fn get_line_size(&self) -> u64 {
         self.line_size
+    }
+
+    pub fn get_uninitialised_line_count(&self) -> usize {
+        self.cache.iter().filter(|a| !a.valid).count()
     }
 }
