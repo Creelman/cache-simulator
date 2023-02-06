@@ -3,14 +3,13 @@ mod simulator;
 mod cache;
 #[cfg(test)]
 mod test;
-mod parallel_sim;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader};
 use std::sync::mpsc;
 use std::thread;
-use std::thread::{JoinHandle, Thread};
+use std::thread::{JoinHandle};
 use std::time::Instant;
 use clap::Parser;
 use crate::config::LayeredCacheConfig;
@@ -38,7 +37,6 @@ struct Args {
 }
 
 fn main() -> Result<(), String> {
-    //test().map_err(|e| e.to_string())?;
     let start = Instant::now();
     let args = Args::parse();
     let config_file = File::open(&args.config).map_err(|e| format!("Couldn't open the config file at path {}: {e}", args.config))?;
@@ -58,6 +56,7 @@ fn main() -> Result<(), String> {
     if args.debug {
         #[cfg(debug_assertions)]
         println!("Running the debug binary, debug mode is enabled by default. If benchmarking do not use this binary, re-compile with the --release argument");
+        println!("Parsed input configuration: {:?}", config);
         let uninitialised_lines = simulator.get_uninitialised_line_counts();
         let formatted= config.caches
             .iter()
@@ -71,8 +70,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn test() -> Result<(), Box<dyn Error>>{
-    let start = Instant::now();
+fn _test() -> Result<(), Box<dyn Error>>{
     let mut x: u64 = 20_000_000;
     let (snd, rec) = mpsc::channel::<(u64, u64)>();
     let xx = x;
@@ -84,6 +82,7 @@ fn test() -> Result<(), Box<dyn Error>>{
         }
         Ok(())
     });
+    let start = Instant::now();
     while x > 0 {
         rec.recv()?;
         x -= 1;

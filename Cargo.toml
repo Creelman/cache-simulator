@@ -11,10 +11,10 @@ regex = "1.7.1"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 
-# The current tests run all examples
+# The current tests run all examples, this speeds them up considerably
 [profile.test]
 opt-level = 3
-debug-assertions = false
 
 [profile.release]
+# Debug info for cargo flamegraph, remove for final submission
 debug = true

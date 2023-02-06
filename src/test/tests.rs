@@ -23,6 +23,7 @@ fn run_all_examples() -> Result<(), Box<dyn Error>> {
     for file in files {
         // Get file name
         let file_name = file.file_name().into_string().map_err(|e| format!("Can't convert OS string ({e:?}) to standard string"))?;
+        println!("Running test for {file_name}");
         // Get components of name
         let tokens = output_pattern.captures(&file_name).ok_or("Couldn't parse the file name".to_string())?;
         let trace_file_path = tokens.get(1).ok_or("Couldn't get the trace file from the output file name".to_string())?.as_str();

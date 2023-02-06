@@ -14,7 +14,6 @@ pub struct Cache {
 #[derive(Clone, Debug, Default)]
 pub struct CacheLineMetadata {
     pub tag: u64,
-    pub valid: bool,
 }
 
 // We assume <= 2^64 instructions in the input
@@ -22,14 +21,17 @@ pub enum CacheReplacementPolicy {
     RoundRobin(Vec<u64>),
     LeastRecentlyUsed(Vec<u64>, u64),
     LeastFrequentlyUsed(Vec<u64>),
+    // Used for direct mapped, not technically necessary but saves a few cycles and some memory
+    None
 }
 
 impl CacheReplacementPolicy {
-    pub fn new(policy: ReplacementPolicyConfig, num_sets: u64, num_lines: u64) -> Self {
+    pub fn new(policy: Option<ReplacementPolicyConfig>, num_sets: u64, num_lines: u64) -> Self {
         match policy {
-            ReplacementPolicyConfig::RoundRobin => Self::RoundRobin(vec![0; num_sets as usize]),
-            ReplacementPolicyConfig::LeastRecentlyUsed => Self::LeastRecentlyUsed(vec![0; num_lines as usize], 1),
-            ReplacementPolicyConfig::LeastFrequentlyUsed => Self::LeastFrequentlyUsed(vec![0; num_lines as usize])
+            Some(ReplacementPolicyConfig::RoundRobin) => Self::RoundRobin(vec![0; num_sets as usize]),
+            Some(ReplacementPolicyConfig::LeastRecentlyUsed) => Self::LeastRecentlyUsed(vec![0; num_lines as usize], 1),
+            Some(ReplacementPolicyConfig::LeastFrequentlyUsed) => Self::LeastFrequentlyUsed(vec![0; num_lines as usize]),
+            None => Self::None
         }
     }
 
@@ -42,12 +44,12 @@ impl CacheReplacementPolicy {
             CacheReplacementPolicy::LeastFrequentlyUsed(usages_map) => {
                 usages_map[cache_index as usize] += 1;
             }
-            // Nothing to do for round robin
-            CacheReplacementPolicy::RoundRobin(_) => {}
+            // Nothing to do for round robin or none
+            _ => {}
         }
     }
 
-    pub fn update_and_get_line_to_write(&mut self, cache_lines_per_set: u64, set: u64, _tag: u64) -> u64 {
+    pub fn update_and_get_line_to_write(&mut self, cache_lines_per_set: u64, set: u64) -> u64 {
         let set_offset = (set * cache_lines_per_set) as usize;
         match self {
             CacheReplacementPolicy::RoundRobin(set_indices) => {
@@ -69,12 +71,13 @@ impl CacheReplacementPolicy {
                 *current += 1;
                 (set_offset + index) as u64
             }
+            CacheReplacementPolicy::None => set_offset as u64
         }
     }
 }
 
 impl Cache {
-    pub fn new(size: u64, line_size: u64, num_sets: u64, policy: ReplacementPolicyConfig) -> Self {
+    pub fn new(size: u64, line_size: u64, num_sets: u64, policy: Option<ReplacementPolicyConfig>) -> Self {
         let cache_alignment_bits = line_size.ilog2() as u8;
         let set_selection_bits = num_sets.ilog2() as u8;
         let cache_lines = size / line_size;
@@ -95,14 +98,14 @@ impl Cache {
         (((input & self.set_selection_bit_mask) >> self.cache_alignment_bits), input & (self.tag_selection_bit_mask))
     }
 
+    #[inline(never)]
     // Cache hit is true, cache miss is false
     pub fn read_and_update_line(&mut self, input: u64) -> bool {
         let (set, tag) = self.address_to_set_and_tag(input);
         let set_inclusive_lower_bound = set * self.set_size;
         let set_exclusive_upper_bound = set_inclusive_lower_bound + self.set_size;
+        // Only search the relevant set
         for (index, line) in &mut self.cache[set_inclusive_lower_bound as usize..set_exclusive_upper_bound as usize].iter().enumerate() {
-            // Skip uninitialised lines
-            if !line.valid { continue; }
             // Cache hit
             if line.tag == tag {
                 // Update replacement policy, report hit
@@ -111,10 +114,9 @@ impl Cache {
             }
         }
         // Cache miss, update
-        let line = self.replacement_policy.update_and_get_line_to_write(self.set_size, set, tag);
+        let line = self.replacement_policy.update_and_get_line_to_write(self.set_size, set);
         self.cache[line as usize] = CacheLineMetadata {
-            tag,
-            valid: true,
+            tag
         };
         false
     }
@@ -128,6 +130,6 @@ impl Cache {
     }
 
     pub fn get_uninitialised_line_count(&self) -> usize {
-        self.cache.iter().filter(|a| !a.valid).count()
+        self.cache.iter().filter(|a| a.tag == 0).count()
     }
 }

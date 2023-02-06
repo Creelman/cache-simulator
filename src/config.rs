@@ -1,11 +1,11 @@
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct LayeredCacheConfig {
     pub caches: Vec<CacheConfig>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CacheConfig {
     pub name: String,
     pub size: u64,
@@ -15,7 +15,7 @@ pub struct CacheConfig {
     pub replacement_policy: ReplacementPolicyConfig,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub enum CacheKindConfig {
     #[serde(alias = "direct")]
     Direct,
@@ -29,7 +29,7 @@ pub enum CacheKindConfig {
     EightWay,
 }
 
-#[derive(Copy, Clone, Deserialize)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub enum ReplacementPolicyConfig {
     #[serde(alias = "rr")]
     RoundRobin,
