@@ -56,7 +56,7 @@ fn main() -> Result<(), String> {
     if args.debug {
         #[cfg(debug_assertions)]
         println!("Running the debug binary, debug mode is enabled by default. If benchmarking do not use this binary, re-compile with the --release argument");
-        println!("Parsed input configuration: {:?}", config);
+        println!("Parsed input configuration: {config:?}");
         let uninitialised_lines = simulator.get_uninitialised_line_counts();
         let formatted= config.caches
             .iter()
@@ -70,6 +70,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
+// Maybe multithreaded? It seems that every cache check takes too little time for it to be worth it though
 fn _test() -> Result<(), Box<dyn Error>>{
     let mut x: u64 = 20_000_000;
     let (snd, rec) = mpsc::channel::<(u64, u64)>();

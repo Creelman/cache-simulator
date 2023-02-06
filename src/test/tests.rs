@@ -12,6 +12,8 @@ const TRACE_FILES_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/trace-
 
 #[test]
 fn run_all_examples() -> Result<(), Box<dyn Error>> {
+    #[cfg(debug_assertions)]
+    println!("Debug assertions are enabled, tests will be slower");
     let output_file_directory = fs::read_dir(SAMPLE_OUTPUTS_PATH)?;
     let output_pattern = Regex::new(r"output-(?P<trace>[0-9a-zA-Z_]+)-(?P<config>[0-9a-zA-Z_]+)\.json")?;
     // Sort files for consistency

@@ -128,32 +128,28 @@ impl Simulator {
         let res = buf.iter()
             .rev()
             .enumerate()
-            .map(|(idx, a)| (HEX_LOOKUP[*a as usize] as u64) << (idx * 4))
+            .map(|(idx, a)| (HEX_LOOKUP[*a as usize]) << (idx * 4))
             .reduce(|a, b| a | b)
             .unwrap();
         debug_assert_eq!(
             {
                 let addr_as_str = std::str::from_utf8(buf).unwrap();
-                let address = u64::from_str_radix(addr_as_str, 16).unwrap();
-                address
+                u64::from_str_radix(addr_as_str, 16).unwrap()
             },
             res
         );
         res
     }
 
-    #[inline(never)]
-    // Marked unsafe as it assumes input is well formed
+    // Assumes input is well formed, also faster than stdlib
     fn parse_size(buf: &[u8; 3]) -> u16 {
-        let mut res: u16 = 0;
-        res += 1u16 * (buf[2] - b'0') as u16;
+        let mut res = (buf[2] - b'0') as u16;
         res += 10u16 * (buf[1] - b'0') as u16;
         res += 100u16 * (buf[0] - b'0') as u16;
         debug_assert_eq!(
             {
                 let size_as_str = std::str::from_utf8(buf).unwrap();
-                let size = size_as_str.parse::<u16>().unwrap();
-                size
+                size_as_str.parse::<u16>().unwrap()
             },
             res
         );
