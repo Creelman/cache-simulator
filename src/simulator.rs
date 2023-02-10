@@ -10,8 +10,8 @@ const ADDRESS_SIZE: usize = 16;
 const ADDRESS_UPPER: usize = ADDRESS_OFFSET + ADDRESS_SIZE;
 const RW_MODE: usize = ADDRESS_UPPER + 1;
 const SIZE: usize = RW_MODE + 2;
-// Switched from [u8] to [u64] to save on assembly cast instructions
-const HEX_LOOKUP: [u64; 256] = generate_hex_lookup_table();
+// Originally [u64] to save casts, profiling shows its better to cast [u8], due to better caching effects
+const HEX_LOOKUP: [u8; 256] = generate_hex_lookup_table();
 
 pub struct Simulator {
     caches: Vec<Cache>,
@@ -69,7 +69,7 @@ impl Simulator {
             }
             current_aligned_address += lowest_line_size;
         }
-        // Main memory access are whatever misses the last cache
+        // Main memory accesses are whatever misses the last cache
         self.result.main_memory_accesses = self.result.caches.last().unwrap().misses;
     }
 
@@ -122,15 +122,15 @@ impl Simulator {
         }
     }
 
-    // Way faster than stdlib, assumes input is well formed
+    // Way faster than stdlib, but omits error checking
     pub fn parse_address(buf: &[u8; 16]) -> u64 {
-        // This is completely unrolled by compiler, output is branch-less (verified on 1.67.0)
+        // This is completely unrolled by compiler and turned into SIMD instructions, verified in disassembly
         let res = buf.iter()
             .rev()
             .enumerate()
-            .map(|(idx, a)| (HEX_LOOKUP[*a as usize]) << (idx * 4))
+            .map(|(idx, a)| (HEX_LOOKUP[*a as usize] as u64) << (idx * 4))
             .reduce(|a, b| a | b)
-            .unwrap();
+            .unwrap(); // Check automatically removed by compiler, don't need unchecked
         debug_assert_eq!(
             {
                 let addr_as_str = std::str::from_utf8(buf).unwrap();
@@ -158,8 +158,8 @@ impl Simulator {
 }
 
 // Cached at compile time
-const fn generate_hex_lookup_table() -> [u64; 256] {
-    let mut output = [0u64; 256];
+const fn generate_hex_lookup_table() -> [u8; 256] {
+    let mut output = [0u8; 256];
     let mut input = 0;
     while input < u8::MAX {
         output[input as usize] = if (input) >= b'0' && input <= b'9' {
@@ -170,7 +170,7 @@ const fn generate_hex_lookup_table() -> [u64; 256] {
             input - b'a' + 10
         } else {
             0
-        } as u64;
+        };
         input += 1;
     }
     output

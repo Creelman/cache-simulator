@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 use regex::Regex;
 use crate::config::{LayeredCacheConfig};
+use crate::io::get_reader;
 use crate::simulator::{LayeredCacheResult, Simulator};
 
 const SAMPLE_INPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-inputs";
@@ -39,7 +40,8 @@ fn run_all_examples() -> Result<(), Box<dyn Error>> {
         // Simulate!
         let config: LayeredCacheConfig = serde_json::from_reader(BufReader::new(config_file))?;
         let mut simulator = Simulator::new(&config);
-        let result = simulator.simulate(BufReader::with_capacity(40_000, trace_file))?;
+        let trace_reader = get_reader(trace_file)?;
+        let result = simulator.simulate(trace_reader)?;
         // Check results
         assert_eq!(*result, expected_output);
         let time = simulator.get_execution_time();

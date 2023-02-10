@@ -3,19 +3,15 @@ mod simulator;
 mod cache;
 #[cfg(test)]
 mod test;
+mod io;
 
-use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader};
-use std::sync::mpsc;
-use std::thread;
-use std::thread::{JoinHandle};
 use std::time::Instant;
 use clap::Parser;
 use crate::config::LayeredCacheConfig;
+use crate::io::get_reader;
 use crate::simulator::Simulator;
-
-const BUFFER_SIZE: usize = 40 * 4096;
 
 #[cfg(debug_assertions)]
 const DEBUG_DEFAULT: bool = true;
@@ -41,13 +37,13 @@ fn main() -> Result<(), String> {
     let args = Args::parse();
     let config_file = File::open(&args.config).map_err(|e| format!("Couldn't open the config file at path {}: {e}", args.config))?;
     let config: LayeredCacheConfig = serde_json::from_reader(BufReader::new(config_file)).map_err(|e| format!("Couldn't parse the config file: {e}"))?;
-    let trace_file = File::open(&args.trace).map_err(|e| format!("Couldn't open the trace file at path {}: {e}", args.trace))?;
-    let trace_reader = BufReader::with_capacity(BUFFER_SIZE, trace_file);
     let mut simulator = Simulator::new(&config);
+    let trace_file = File::open(&args.trace).map_err(|e| format!("Couldn't open the trace file at path {}: {e}", args.trace))?;
+    let trace_reader = get_reader(trace_file)?;
     let result = simulator.simulate(trace_reader)?;
-    println!("{}", serde_json::to_string_pretty(result).map_err(|e| format!("Couldn't serialise the output {e}"))?);
-    let end = Instant::now();
+    //println!("{}", serde_json::to_string_pretty(result).map_err(|e| format!("Couldn't serialise the output {e}"))?);
     if args.performance {
+        let end = Instant::now();
         let simulation_time = simulator.get_execution_time();
         let total_time = end - start;
         println!("Simulation time: {}s", simulation_time.as_nanos() as f64 / 1e9);
@@ -58,38 +54,14 @@ fn main() -> Result<(), String> {
         println!("Running the debug binary, debug mode is enabled by default. If benchmarking do not use this binary, re-compile with the --release argument");
         println!("Parsed input configuration: {config:?}");
         let uninitialised_lines = simulator.get_uninitialised_line_counts();
-        let formatted= config.caches
+        let formatted = config.caches
             .iter()
             .map(|c| c.name.clone())
             .zip(uninitialised_lines.iter())
             .map(|(name, count)| format!("{name}: {}", *count))
-            .reduce(|a, b|format!("{a}, {b}")).unwrap();
+            .reduce(|a, b| format!("{a}, {b}")).unwrap();
         println!("Uninitialised cache lines by layer: ({formatted})");
         println!("Total uninitialised cache lines: {}", uninitialised_lines.iter().sum::<u64>())
     }
-    Ok(())
-}
-
-// Maybe multithreaded? It seems that every cache check takes too little time for it to be worth it though
-fn _test() -> Result<(), Box<dyn Error>>{
-    let mut x: u64 = 20_000_000;
-    let (snd, rec) = mpsc::channel::<(u64, u64)>();
-    let xx = x;
-    let thread: JoinHandle<Result<(), String>> = thread::spawn(move  || {
-        let mut i = 0;
-        while i < xx {
-            snd.send((i, xx)).map_err(|e| e.to_string())?;
-            i += 1;
-        }
-        Ok(())
-    });
-    let start = Instant::now();
-    while x > 0 {
-        rec.recv()?;
-        x -= 1;
-    }
-    thread.join().map_err(|_| "Join err")??;
-    let end = Instant::now();
-    println!("{:?}", end - start);
     Ok(())
 }
