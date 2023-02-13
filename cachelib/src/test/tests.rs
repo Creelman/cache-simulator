@@ -6,10 +6,7 @@ use regex::Regex;
 use crate::config::{LayeredCacheConfig};
 use crate::io::get_reader;
 use crate::simulator::{LayeredCacheResult, Simulator};
-
-const SAMPLE_INPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-inputs";
-const SAMPLE_OUTPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-outputs";
-const TRACE_FILES_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/trace-files";
+use crate::util::{SAMPLE_INPUTS_PATH, TRACE_FILES_PATH, SAMPLE_OUTPUTS_PATH};
 
 #[test]
 fn run_all_examples() -> Result<(), Box<dyn Error>> {

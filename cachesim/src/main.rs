@@ -1,22 +1,10 @@
-mod config;
-pub mod simulator;
-pub mod cache;
-#[cfg(test)]
-mod test;
-pub mod io;
-mod replacement_policies;
-
-mod hex {
-    include!(concat!(env!("OUT_DIR"), "/hex.rs"));
-}
-
 use std::fs::File;
 use std::io::{BufReader};
 use std::time::Instant;
 use clap::Parser;
-use crate::config::LayeredCacheConfig;
-use crate::io::get_reader;
-use crate::simulator::Simulator;
+use cachelib::config::LayeredCacheConfig;
+use cachelib::io::get_reader;
+use cachelib::simulator::Simulator;
 
 #[cfg(debug_assertions)]
 const DEBUG_DEFAULT: bool = true;

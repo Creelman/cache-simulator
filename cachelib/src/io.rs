@@ -1,7 +1,7 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Seek};
 
-pub fn get_reader(file: File) -> Result<impl Read, String> {
+pub fn get_reader(file: File) -> Result<impl Read + Seek, String> {
     // Compatibility on other systems
     #[cfg(not(unix))]
     {

@@ -47,14 +47,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
 
 [[package]]
-name = "cacheprac"
+name = "cachelib"
 version = "0.1.0"
 dependencies = [
  "clap 4.1.4",
  "criterion",
- "lazy_static",
+ "criterion-cycles-per-byte",
  "memmap2",
  "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cachesim"
+version = "0.1.0"
+dependencies = [
+ "cachelib",
+ "clap 4.1.4",
  "serde",
  "serde_json",
 ]
@@ -186,6 +196,15 @@ dependencies = [
  "serde_json",
  "tinytemplate",
  "walkdir",
+]
+
+[[package]]
+name = "criterion-cycles-per-byte"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bc54a252c6611c249fb826e73b85ac675466370112d0aa35be3d3c1246322c5"
+dependencies = [
+ "criterion",
 ]
 
 [[package]]
@@ -614,9 +633,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.91"
+version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877c235533714907a8c2464236f5c4b2a17262ef1bd71f38f35ea592c8da6883"
+checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
 dependencies = [
  "itoa",
  "ryu",

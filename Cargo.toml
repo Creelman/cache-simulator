@@ -1,17 +1,8 @@
-[package]
-name = "cacheprac"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-clap = { version = "4.1.4", features = ["derive"] }
-regex = "1.7.1"
-serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.91"
-memmap2 = "0.5.8"
-lazy_static = "1.4.0"
+[workspace]
+members = [
+    "cachelib",
+    "cachesim",
+]
 
 # The current tests run all examples, this speeds them up considerably. Remove when debugging.
 # Debug assertions are active by default
@@ -19,14 +10,5 @@ lazy_static = "1.4.0"
 opt-level = 3
 
 [profile.release]
-# Debug info for cargo flamegraph, remove for final submission
+# Can also use debug = true and debug-assertions = true can be useful here
 lto = true
-
-# Benchmarking things
-
-[dev-dependencies]
-criterion = "0.4.0"
-
-[[bench]]
-name = "benchmark"
-harness = false
