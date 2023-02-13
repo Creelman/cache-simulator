@@ -1,14 +1,47 @@
-use crate::config::ReplacementPolicyConfig;
+use crate::replacement_policies::{LeastFrequentlyUsed, LeastRecentlyUsed, NoPolicy, ReplacementPolicy, RoundRobin};
 
-pub struct Cache {
+pub struct Cache<R: ReplacementPolicy>
+{
     set_selection_bit_mask: u64,
     tag_selection_bit_mask: u64,
     cache_alignment_bit_mask: u64,
     line_size: u64,
-    cache: Vec<CacheLineMetadata>,
-    replacement_policy: CacheReplacementPolicy,
+    cache: Vec<u64>,
+    replacement_policy: R,
     cache_alignment_bits: u8,
     set_size: u64,
+}
+
+// Relatively boilerplate heavy, but much faster than using trait objects
+pub enum GenericCache {
+    RoundRobin(Cache<RoundRobin>),
+    LeastRecentlyUsed(Cache<LeastRecentlyUsed>),
+    LeastFrequentlyUsed(Cache<LeastFrequentlyUsed>),
+    None(Cache<NoPolicy>),
+}
+
+impl From<Cache<RoundRobin>> for GenericCache {
+    fn from(value: Cache<RoundRobin>) -> Self {
+        Self::RoundRobin(value)
+    }
+}
+
+impl From<Cache<LeastRecentlyUsed>> for GenericCache {
+    fn from(value: Cache<LeastRecentlyUsed>) -> Self {
+        Self::LeastRecentlyUsed(value)
+    }
+}
+
+impl From<Cache<LeastFrequentlyUsed>> for GenericCache {
+    fn from(value: Cache<LeastFrequentlyUsed>) -> Self {
+        Self::LeastFrequentlyUsed(value)
+    }
+}
+
+impl From<Cache<NoPolicy>> for GenericCache {
+    fn from(value: Cache<NoPolicy>) -> Self {
+        Self::None(value)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -16,68 +49,8 @@ pub struct CacheLineMetadata {
     pub tag: u64,
 }
 
-// We assume <= 2^64 instructions in the input
-pub enum CacheReplacementPolicy {
-    RoundRobin(Vec<u64>),
-    LeastRecentlyUsed(Vec<u64>, u64),
-    LeastFrequentlyUsed(Vec<u64>),
-    // Used for direct mapped, not technically necessary but saves a few cycles and some memory
-    None
-}
-
-impl CacheReplacementPolicy {
-    pub fn new(policy: Option<ReplacementPolicyConfig>, num_sets: u64, num_lines: u64) -> Self {
-        match policy {
-            Some(ReplacementPolicyConfig::RoundRobin) => Self::RoundRobin(vec![0; num_sets as usize]),
-            Some(ReplacementPolicyConfig::LeastRecentlyUsed) => Self::LeastRecentlyUsed(vec![0; num_lines as usize], 1),
-            Some(ReplacementPolicyConfig::LeastFrequentlyUsed) => Self::LeastFrequentlyUsed(vec![0; num_lines as usize]),
-            None => Self::None
-        }
-    }
-
-    pub fn update_on_read(&mut self, cache_index: u64) {
-        match self {
-            CacheReplacementPolicy::LeastRecentlyUsed(times, current) => {
-                times[cache_index as usize] = *current;
-                *current += 1;
-            }
-            CacheReplacementPolicy::LeastFrequentlyUsed(usages_map) => {
-                usages_map[cache_index as usize] += 1;
-            }
-            // Nothing to do for round robin or none
-            _ => {}
-        }
-    }
-
-    pub fn update_and_get_line_to_write(&mut self, cache_lines_per_set: u64, set: u64) -> u64 {
-        let set_offset = (set * cache_lines_per_set) as usize;
-        match self {
-            CacheReplacementPolicy::RoundRobin(set_indices) => {
-                let set_index = &mut set_indices[set as usize];
-                let val = set_offset as u64 + *set_index;
-                *set_index = (*set_index + 1) % cache_lines_per_set;
-                val
-            }
-            CacheReplacementPolicy::LeastFrequentlyUsed(usages_map) => {
-                let slice = &mut usages_map[set_offset..set_offset + cache_lines_per_set as usize];
-                let (index, value) = slice.iter_mut().enumerate().min_by(|(_, v1), (_, v2)| v1.cmp(v2)).unwrap();
-                *value = 1;
-                (set_offset + index) as u64
-            }
-            CacheReplacementPolicy::LeastRecentlyUsed(times, current) => {
-                let slice = &mut times[set_offset..set_offset + cache_lines_per_set as usize];
-                let (index, value) = slice.iter_mut().enumerate().min_by(|(_, v1), (_, v2)| v1.cmp(v2)).unwrap();
-                *value = *current;
-                *current += 1;
-                (set_offset + index) as u64
-            }
-            CacheReplacementPolicy::None => set_offset as u64
-        }
-    }
-}
-
-impl Cache {
-    pub fn new(size: u64, line_size: u64, num_sets: u64, policy: Option<ReplacementPolicyConfig>) -> Self {
+impl<R: ReplacementPolicy> Cache<R> {
+    pub fn new(size: u64, line_size: u64, num_sets: u64, policy: R) -> Self {
         let cache_alignment_bits = line_size.ilog2() as u8;
         let set_selection_bits = num_sets.ilog2() as u8;
         let cache_lines = size / line_size;
@@ -88,48 +61,100 @@ impl Cache {
             cache_alignment_bit_mask: !((2u64.pow(cache_alignment_bits as u32)) - 1),
             line_size,
             cache_alignment_bits,
-            cache: vec![CacheLineMetadata::default(); cache_lines as usize],
-            replacement_policy: CacheReplacementPolicy::new(policy, num_sets, cache_lines),
+            cache: vec![0; cache_lines as usize],
+            replacement_policy: policy,
         }
     }
+}
 
+impl<R: ReplacementPolicy> CacheTrait for Cache<R> {
     #[inline(always)]
     fn address_to_set_and_tag(&self, input: u64) -> (u64, u64) {
         (((input & self.set_selection_bit_mask) >> self.cache_alignment_bits), input & (self.tag_selection_bit_mask))
     }
-
     #[inline(never)]
     // Cache hit is true, cache miss is false
-    pub fn read_and_update_line(&mut self, input: u64) -> bool {
+    fn read_and_update_line(&mut self, input: u64) -> bool {
         let (set, tag) = self.address_to_set_and_tag(input);
         let set_inclusive_lower_bound = set * self.set_size;
         let set_exclusive_upper_bound = set_inclusive_lower_bound + self.set_size;
         // Only search the relevant set
         for (index, line) in &mut self.cache[set_inclusive_lower_bound as usize..set_exclusive_upper_bound as usize].iter().enumerate() {
             // Cache hit
-            if line.tag == tag {
+            if *line == tag {
                 // Update replacement policy, report hit
                 self.replacement_policy.update_on_read(set_inclusive_lower_bound + index as u64);
                 return true;
             }
         }
         // Cache miss, update
-        let line = self.replacement_policy.update_and_get_line_to_write(self.set_size, set);
-        self.cache[line as usize] = CacheLineMetadata {
-            tag
-        };
+        let line = self.replacement_policy.get_new_line(set_inclusive_lower_bound, set, self.set_size);
+        self.cache[line as usize] = tag;
         false
     }
-
-    pub fn get_alignment_bit_mask(&self) -> u64 {
+    fn get_alignment_bit_mask(&self) -> u64 {
         self.cache_alignment_bit_mask
     }
-
-    pub fn get_line_size(&self) -> u64 {
+    fn get_line_size(&self) -> u64 {
         self.line_size
     }
+    fn get_uninitialised_line_count(&self) -> usize {
+        self.cache.iter().filter(|a| **a == 0).count()
+    }
+}
 
-    pub fn get_uninitialised_line_count(&self) -> usize {
-        self.cache.iter().filter(|a| a.tag == 0).count()
+pub trait CacheTrait {
+    fn address_to_set_and_tag(&self, input: u64) -> (u64, u64);
+    // Cache hit is true, cache miss is false
+    fn read_and_update_line(&mut self, input: u64) -> bool;
+    fn get_alignment_bit_mask(&self) -> u64;
+    fn get_line_size(&self) -> u64;
+    fn get_uninitialised_line_count(&self) -> usize;
+}
+
+impl CacheTrait for GenericCache {
+    fn address_to_set_and_tag(&self, input: u64) -> (u64, u64) {
+        match self {
+            GenericCache::RoundRobin(c) => c.address_to_set_and_tag(input),
+            GenericCache::LeastRecentlyUsed(c) => c.address_to_set_and_tag(input),
+            GenericCache::LeastFrequentlyUsed(c) => c.address_to_set_and_tag(input),
+            GenericCache::None(c) => c.address_to_set_and_tag(input)
+        }
+    }
+
+    fn read_and_update_line(&mut self, input: u64) -> bool {
+        match self {
+            GenericCache::RoundRobin(c) => c.read_and_update_line(input),
+            GenericCache::LeastRecentlyUsed(c) => c.read_and_update_line(input),
+            GenericCache::LeastFrequentlyUsed(c) => c.read_and_update_line(input),
+            GenericCache::None(c) => c.read_and_update_line(input)
+        }
+    }
+
+    fn get_alignment_bit_mask(&self) -> u64 {
+        match self {
+            GenericCache::RoundRobin(c) => c.get_alignment_bit_mask(),
+            GenericCache::LeastRecentlyUsed(c) => c.get_alignment_bit_mask(),
+            GenericCache::LeastFrequentlyUsed(c) => c.get_alignment_bit_mask(),
+            GenericCache::None(c) => c.get_alignment_bit_mask()
+        }
+    }
+
+    fn get_line_size(&self) -> u64 {
+        match self {
+            GenericCache::RoundRobin(c) => c.get_line_size(),
+            GenericCache::LeastRecentlyUsed(c) => c.get_line_size(),
+            GenericCache::LeastFrequentlyUsed(c) => c.get_line_size(),
+            GenericCache::None(c) => c.get_line_size()
+        }
+    }
+
+    fn get_uninitialised_line_count(&self) -> usize {
+        match self {
+            GenericCache::RoundRobin(c) => c.get_uninitialised_line_count(),
+            GenericCache::LeastRecentlyUsed(c) => c.get_uninitialised_line_count(),
+            GenericCache::LeastFrequentlyUsed(c) => c.get_uninitialised_line_count(),
+            GenericCache::None(c) => c.get_uninitialised_line_count()
+        }
     }
 }

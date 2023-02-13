@@ -1,9 +1,14 @@
 mod config;
-mod simulator;
-mod cache;
+pub mod simulator;
+pub mod cache;
 #[cfg(test)]
 mod test;
-mod io;
+pub mod io;
+mod replacement_policies;
+
+mod hex {
+    include!(concat!(env!("OUT_DIR"), "/hex.rs"));
+}
 
 use std::fs::File;
 use std::io::{BufReader};
@@ -41,7 +46,7 @@ fn main() -> Result<(), String> {
     let trace_file = File::open(&args.trace).map_err(|e| format!("Couldn't open the trace file at path {}: {e}", args.trace))?;
     let trace_reader = get_reader(trace_file)?;
     let result = simulator.simulate(trace_reader)?;
-    //println!("{}", serde_json::to_string_pretty(result).map_err(|e| format!("Couldn't serialise the output {e}"))?);
+    println!("{}", serde_json::to_string_pretty(result).map_err(|e| format!("Couldn't serialise the output {e}"))?);
     if args.performance {
         let end = Instant::now();
         let simulation_time = simulator.get_execution_time();
@@ -51,7 +56,7 @@ fn main() -> Result<(), String> {
     }
     if args.debug {
         #[cfg(debug_assertions)]
-        println!("Running the debug binary, debug mode is enabled by default. If benchmarking do not use this binary, re-compile with the --release argument");
+        println!("Running the debug binary, debug mode is enabled by default. If benchmarking, do not use this binary, re-compile with the --release argument when using cargo run");
         println!("Parsed input configuration: {config:?}");
         let uninitialised_lines = simulator.get_uninitialised_line_counts();
         let formatted = config.caches

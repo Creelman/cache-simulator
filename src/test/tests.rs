@@ -42,8 +42,8 @@ fn run_all_examples() -> Result<(), Box<dyn Error>> {
         let mut simulator = Simulator::new(&config);
         let trace_reader = get_reader(trace_file)?;
         let result = simulator.simulate(trace_reader)?;
-        // Check results
         assert_eq!(*result, expected_output);
+        // Check results
         let time = simulator.get_execution_time();
         println!("Success for {file_name}, time: {}", time.as_nanos() as f64 / 1e9);
     }
