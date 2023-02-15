@@ -98,11 +98,19 @@ impl ReplacementPolicy for LeastRecentlyUsed {
 
     fn get_new_line(&mut self, set_lower_bound_index: u64, _set: u64, cache_lines_per_set: u64) -> u64 {
         let slb = set_lower_bound_index as usize;
-        let slice = &mut self.last_used_times[slb..slb + cache_lines_per_set as usize];
-        let (index, value) = slice.iter_mut().enumerate().min_by(|(_, v1), (_, v2)| v1.cmp(v2)).unwrap();
-        *value = self.time;
+        let mut index = slb;
+        let mut min_value = u64::MAX;
+        let mut min_index = usize::MAX;
+        while index < slb + cache_lines_per_set as usize {
+            if self.last_used_times[index] < min_value {
+                min_value = self.last_used_times[index];
+                min_index = index;
+            }
+            index += 1;
+        }
+        self.last_used_times[min_index] = self.time;
         self.time += 1;
-        (slb + index) as u64
+        (min_index) as u64
     }
 }
 
@@ -134,7 +142,7 @@ impl ReplacementPolicy for LeastFrequentlyUsed {
         while index < slb + cache_lines_per_set as usize {
             if self.usages[index] < min_value {
                 min_value = self.usages[index];
-                min_index = index
+                min_index = index;
             }
             index += 1;
         }

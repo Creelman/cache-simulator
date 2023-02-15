@@ -13,7 +13,8 @@ const DEBUG_DEFAULT: bool = true;
 const DEBUG_DEFAULT: bool = false;
 
 #[derive(Parser, Debug)]
-#[command(about = String::from("Cache simulator for CS4202 Practical 1"))]
+#[command(about)]
+/// Cache simulator for CS4202 Practical 1
 struct Args {
     /// The path to the JSON configuration file
     config: String,
@@ -35,6 +36,9 @@ fn main() -> Result<(), String> {
     let args = Args::parse();
     let config_file = File::open(&args.config).map_err(|e| format!("Couldn't open the config file at path {}: {e}", args.config))?;
     let config: LayeredCacheConfig = serde_json::from_reader(BufReader::new(config_file)).map_err(|e| format!("Couldn't parse the config file: {e}"))?;
+    if config.caches.is_empty() {
+        return Err("The provided file is valid, but the list of caches was empty".to_string())
+    }
     let mut simulator = Simulator::new(&config);
     let trace_file = File::open(&args.trace).map_err(|e| format!("Couldn't open the trace file at path {}: {e}", args.trace))?;
     // MMap for speed. If we wanted more portability we could use a BufReader and repeatedly call

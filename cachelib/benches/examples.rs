@@ -6,18 +6,6 @@ use cachelib::simulator::Simulator;
 use cachelib::util::get_configs;
 
 /// Benchmark experimenting
-///
-/// # Arguments
-///
-/// * `c`:
-///
-/// returns: ()
-///
-/// # Examples
-///
-/// ```
-///
-/// ```
 pub fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("StudRes Examples");
 
