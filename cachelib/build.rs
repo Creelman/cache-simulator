@@ -5,9 +5,12 @@ fn main() {
     let out_dir = std::env::var_os("OUT_DIR").unwrap();
     let path = std::path::Path::new(&out_dir).join("hex.rs");
     let lookup_table = format!("{:?}", generate_hex_lookup_table());
-    std::fs::write(&path, format!("pub const HEX_LOOKUP: [[u8; u8::MAX as usize + 1]; u8::MAX as usize + 1] = {};", lookup_table)).unwrap();
+    std::fs::write(path, format!("pub const HEX_LOOKUP: [[u8; u8::MAX as usize + 1]; u8::MAX as usize + 1] = {lookup_table};")).unwrap();
 }
 
+// This is rather large, but only a few bits of it are ever accessed assuming input is well formed,
+// so it shouldn't take up too much of the cache - only 16 * 16 = 256 elements are actually used,
+// and they're sequentially clustered
 const fn generate_hex_lookup_table() -> [[u8; u8::MAX as usize + 1]; u8::MAX as usize + 1] {
     let mut output = [[0u8; u8::MAX as usize + 1]; u8::MAX as usize + 1];
     let mut input = 0;
@@ -24,6 +27,7 @@ const fn map_hex_char(input: u8) -> u8 {
     if (input) >= b'0' && input <= b'9' {
         input - b'0'
     } else if input >= b'A' && input <= b'F' {
+        // Might as well support uppercase, there's no additional overhead from it
         input - b'A' + 10
     } else if input >= b'a' && input <= b'f' {
         input - b'a' + 10

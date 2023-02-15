@@ -10,5 +10,7 @@ members = [
 opt-level = 3
 
 [profile.release]
-# Can also use debug = true and debug-assertions = true can be useful here
+# LTO allows for optimisations across crates, which can allow for some small performance gains
 lto = true
+# We don't need to handle panics anywhere, aborting is fine, although gains from this are marginal
+panic = "abort"
