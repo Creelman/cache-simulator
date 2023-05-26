@@ -28,5 +28,5 @@ mod hex {
 #[cfg(test)]
 mod test;
 
-/// Contains utilities for running tests and benchmarks. For submission, path constants have been set to StudRes(!)
+/// Contains utilities for running tests and benchmarks.
 pub mod util;

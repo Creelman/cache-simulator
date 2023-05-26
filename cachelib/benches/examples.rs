@@ -7,7 +7,7 @@ use cachelib::util::get_configs;
 
 /// Benchmark experimenting
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("StudRes Examples");
+    let mut group = c.benchmark_group("Examples");
 
     get_configs()
         .unwrap()

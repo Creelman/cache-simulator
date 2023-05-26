@@ -3,13 +3,13 @@ use std::fs;
 use regex::Regex;
 
 /// The path for sample inputs
-pub const SAMPLE_INPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-inputs";
+pub const SAMPLE_INPUTS_PATH: &str = "examples/sample-inputs";
 
 /// The path for sample outputs
-pub const SAMPLE_OUTPUTS_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/sample-outputs";
+pub const SAMPLE_OUTPUTS_PATH: &str = "examples/sample-outputs";
 
 /// The path for trace files
-pub const TRACE_FILES_PATH: &str = "/cs/studres/CS4202/Coursework/P1-CacheSim/trace-files";
+pub const TRACE_FILES_PATH: &str = "examples/trace-files";
 
 /// Convenience struct for test cases
 pub struct TestCasePaths {
