@@ -1,4 +1,4 @@
-# CS4202 Practical 1 - Cache Simulator
+# Hierarchical Cache Simulator
 
 ## Design
 The implementation is split into two crates, `cachelib` and `cachesim`. The former can be used a library, with the latter being a small wrapper around the library to implement a command line interface.
