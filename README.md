@@ -7,6 +7,10 @@ As such, the implementation prioritises ease of use and maintenance, while striv
 
 The implementation is written in Rust, and the executable supports most platforms which support memory mapping files as cross-platform APIs are used.
 
+## Performance
+
+Depends on the cache being simulated; for a direct mapped cache on a text-based trace file, the simulator averages around 6.0GB/s including parsing. Hard drive speed tends to be the limiting factor.
+
 ## Safety
 
 All core functionality avoids unsafe code. `cachesim` and the tests use unsafe blocks to memory map files due to limitations across platforms, for more information see the crate documentation for `memmap2` [here](https://docs.rs/memmap2/latest/memmap2/struct.Mmap.html)
